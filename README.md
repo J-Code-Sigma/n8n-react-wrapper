@@ -39,7 +39,7 @@ This project includes a pre-configured n8n automation platform that runs via Doc
 
 ### Prerequisites
 
-- Docker and Docker Compose installed on your system
+- **Docker** and **Docker Compose** installed on your system
 - Git (to clone this repository)
 
 ### Getting Started with n8n
@@ -147,4 +147,3 @@ This project is built with:
 - Tailwind CSS
 - Docker & Docker Compose (for n8n)
 - nginx (for n8n proxy)
-
