@@ -30,60 +30,119 @@ const Index = () => {
         }
       };
 
-      // Listen for console errors from the iframe
-      const handleConsoleMessage = (event: any) => {
-        if (event.data && typeof event.data === 'string') {
-          if (event.data.includes('WebSocketClient') && event.data.includes('Connection lost')) {
-            console.log('WebSocket connection issue detected from console');
-            setConnectionStatus('reconnecting');
-          } else if (event.data.includes('WebSocketClient') && event.data.includes('Attempting to reconnect')) {
-            console.log('WebSocket reconnection attempt detected');
-            setConnectionStatus('reconnecting');
-          }
-        }
-      };
-
-      window.addEventListener('message', handleMessage);
-      window.addEventListener('message', handleConsoleMessage);
-      
-      // Monitor browser console for WebSocket errors
+      // Override console methods to capture iframe console messages
       const originalConsoleLog = console.log;
+      const originalConsoleError = console.error;
+      const originalConsoleWarn = console.warn;
+      
       console.log = (...args) => {
         originalConsoleLog(...args);
         const message = args.join(' ');
         if (message.includes('[WebSocketClient] Connection lost')) {
-          setConnectionStatus('reconnecting');
-        } else if (message.includes('[WebSocketClient] Attempting to reconnect')) {
+          console.log('WebSocket disconnection detected!');
           setConnectionStatus('reconnecting');
         }
       };
+
+      console.error = (...args) => {
+        originalConsoleError(...args);
+        const message = args.join(' ');
+        if (message.includes('WebSocket') || message.includes('Connection lost')) {
+          console.log('WebSocket error detected!');
+          setConnectionStatus('reconnecting');
+        }
+      };
+
+      console.warn = (...args) => {
+        originalConsoleWarn(...args);
+        const message = args.join(' ');
+        if (message.includes('WebSocket') || message.includes('Connection lost')) {
+          console.log('WebSocket warning detected!');
+          setConnectionStatus('reconnecting');
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
       
       return () => {
         window.removeEventListener('message', handleMessage);
-        window.removeEventListener('message', handleConsoleMessage);
         console.log = originalConsoleLog;
+        console.error = originalConsoleError;
+        console.warn = originalConsoleWarn;
       };
     }
   }, [isConnected]);
 
-  // Monitor for WebSocket messages in browser console
+  // Monitor for WebSocket status using polling and checking for reconnect patterns
   useEffect(() => {
     if (isConnected) {
-      // Check for WebSocket connection status by monitoring console
+      let reconnectTimer: NodeJS.Timeout;
+      
       const checkInterval = setInterval(() => {
-        // This will help us detect when WebSocket issues are happening
-        // even if the iframe can't directly communicate the status
+        // Listen for WebSocket reconnection patterns in the page
+        const consoleMessages = document.querySelectorAll('*');
+        let hasWebSocketIssues = false;
+        
+        // Check if we've seen reconnecting status for too long
         if (connectionStatus === 'reconnecting') {
-          // After some time, try to detect if connection is restored
-          setTimeout(() => {
-            setConnectionStatus('connected');
-          }, 5000);
+          // If we've been reconnecting for more than 10 seconds, assume we're still having issues
+          if (!reconnectTimer) {
+            reconnectTimer = setTimeout(() => {
+              // Only set back to connected if we haven't seen more issues
+              if (connectionStatus === 'reconnecting') {
+                console.log('Assuming connection restored after timeout');
+                setConnectionStatus('connected');
+              }
+            }, 10000);
+          }
+        } else if (connectionStatus === 'connected') {
+          // Clear the timer if we're connected
+          if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+            reconnectTimer = undefined;
+          }
         }
       }, 2000);
 
-      return () => clearInterval(checkInterval);
+      return () => {
+        clearInterval(checkInterval);
+        if (reconnectTimer) {
+          clearTimeout(reconnectTimer);
+        }
+      };
     }
   }, [isConnected, connectionStatus]);
+
+  // Add a more aggressive monitoring approach using MutationObserver for console changes
+  useEffect(() => {
+    if (isConnected) {
+      // Monitor the browser's console output more aggressively
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach((node) => {
+              if (node.textContent) {
+                const text = node.textContent;
+                if (text.includes('[WebSocketClient] Connection lost') || 
+                    text.includes('WebSocket connection closed')) {
+                  console.log('WebSocket disconnection detected via DOM observer!');
+                  setConnectionStatus('reconnecting');
+                }
+              }
+            });
+          }
+        });
+      });
+
+      // Start observing the document for changes
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+
+      return () => observer.disconnect();
+    }
+  }, [isConnected]);
 
   const handleConnect = () => {
     if (n8nUrl) {
