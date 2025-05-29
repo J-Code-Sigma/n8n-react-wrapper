@@ -13,6 +13,8 @@ services:
       - N8N_SECURITY_AUDIT_DAYS=7
       - GENERIC_TIMEZONE=UTC
       - WEBHOOK_URL=http://localhost:8081
+      - DB_TYPE=sqlite
+      - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite
     volumes:
       - ./n8n_data:/home/node/.n8n
     networks:
