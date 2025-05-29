@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { ExternalLink, Settings, AlertTriangle } from 'lucide-react';
 
 const Index = () => {
-  const [n8nUrl, setN8nUrl] = useState('http://localhost:5678');
+  const [n8nUrl, setN8nUrl] = useState('http://localhost:8080');
   const [isConnected, setIsConnected] = useState(false);
   const [showIframeError, setShowIframeError] = useState(false);
 
@@ -55,8 +54,8 @@ const Index = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  <strong>Browser Security Restriction:</strong> Your browser is blocking the embedded n8n interface. 
-                  Try using the "Open in New Tab" button above, or configure n8n to allow iframe embedding.
+                  <strong>Connection Issue:</strong> Unable to load n8n interface. 
+                  Make sure both n8n and nginx are running with the docker-compose setup.
                 </p>
               </div>
             </div>
@@ -71,7 +70,6 @@ const Index = () => {
           onError={() => setShowIframeError(true)}
           onLoad={(e) => {
             const iframe = e.target as HTMLIFrameElement;
-            // Check if iframe content is accessible
             setTimeout(() => {
               try {
                 if (!iframe.contentDocument && !iframe.contentWindow) {
@@ -99,7 +97,7 @@ const Index = () => {
             <Input
               id="n8n-url"
               type="url"
-              placeholder="http://localhost:5678"
+              placeholder="http://localhost:8080"
               value={n8nUrl}
               onChange={(e) => setN8nUrl(e.target.value)}
             />
@@ -108,13 +106,13 @@ const Index = () => {
             Connect to n8n
           </Button>
           <div className="text-sm text-gray-600 text-center">
-            <p>Make sure your n8n instance is running and accessible.</p>
-            <p className="mt-1">Default: http://localhost:5678</p>
+            <p>Make sure your n8n instance is running with nginx proxy.</p>
+            <p className="mt-1">Default: http://localhost:8080</p>
             <div className="mt-3 p-3 bg-blue-50 rounded-lg">
               <p className="text-xs text-blue-700">
-                <strong>To enable iframe embedding:</strong> Start n8n with the environment variable 
-                <code className="bg-white px-1 rounded"> N8N_EDITOR_BASE_URL=http://localhost:5678</code> 
-                and add iframe headers configuration.
+                <strong>Setup with nginx proxy:</strong> Run 
+                <code className="bg-white px-1 rounded mx-1">docker compose up -d</code> 
+                in the n8n directory. The nginx proxy handles iframe embedding automatically.
               </p>
             </div>
           </div>
