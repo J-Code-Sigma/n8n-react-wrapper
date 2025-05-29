@@ -106,17 +106,6 @@ const Index = () => {
           <Button onClick={handleConnect} className="w-full">
             Connect to n8n
           </Button>
-          <div className="text-sm text-gray-600 text-center">
-            <p>Make sure your n8n instance is running with nginx proxy.</p>
-            <p className="mt-1">Default: http://localhost:8081</p>
-            <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-              <p className="text-xs text-blue-700">
-                <strong>Setup with nginx proxy:</strong> Run 
-                <code className="bg-white px-1 rounded mx-1">docker compose up -d</code> 
-                in the n8n directory. The nginx proxy handles iframe embedding automatically.
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
