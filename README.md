@@ -1,7 +1,8 @@
-
 # N8N React Wrapper
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+The requirements are:
+- **Node.js & npm** - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Docker & Docker Compose** - [install Docker](https://docs.docker.com/get-docker/) and [install Docker Compose](https://docs.docker.com/compose/install/)
 
 Follow these steps:
 
