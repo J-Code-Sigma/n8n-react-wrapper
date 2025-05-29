@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { ExternalLink, Settings, AlertTriangle } from 'lucide-react';
 
 const Index = () => {
-  const [n8nUrl, setN8nUrl] = useState('http://localhost:8080');
+  const [n8nUrl, setN8nUrl] = useState('http://localhost:8081');
   const [isConnected, setIsConnected] = useState(false);
   const [showIframeError, setShowIframeError] = useState(false);
 
@@ -97,7 +98,7 @@ const Index = () => {
             <Input
               id="n8n-url"
               type="url"
-              placeholder="http://localhost:8080"
+              placeholder="http://localhost:8081"
               value={n8nUrl}
               onChange={(e) => setN8nUrl(e.target.value)}
             />
@@ -107,7 +108,7 @@ const Index = () => {
           </Button>
           <div className="text-sm text-gray-600 text-center">
             <p>Make sure your n8n instance is running with nginx proxy.</p>
-            <p className="mt-1">Default: http://localhost:8080</p>
+            <p className="mt-1">Default: http://localhost:8081</p>
             <div className="mt-3 p-3 bg-blue-50 rounded-lg">
               <p className="text-xs text-blue-700">
                 <strong>Setup with nginx proxy:</strong> Run 
