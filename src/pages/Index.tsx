@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,63 +13,62 @@ const Index = () => {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('disconnected');
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Enhanced WebSocket monitoring that captures n8n-specific messages
+  // Monitor for WebSocket connection issues
   useEffect(() => {
     if (isConnected) {
-      console.log('Setting up enhanced WebSocket monitoring...');
+      console.log('Setting up WebSocket monitoring...');
+      
+      let hasWebSocketIssues = false;
+      let connectionCheckTimeout: NodeJS.Timeout;
       
       // Store original console methods
-      const originalConsole = {
-        log: console.log,
-        error: console.error,
-        warn: console.warn,
-        info: console.info,
-        debug: console.debug
-      };
+      const originalLog = console.log;
+      const originalError = console.error;
+      const originalWarn = console.warn;
       
-      // Enhanced console interceptor
-      const interceptConsole = (method: keyof typeof originalConsole) => {
-        console[method] = (...args: any[]) => {
-          originalConsole[method](...args);
-          
-          const message = args.join(' ');
-          
-          // Check for WebSocket connection lost patterns
-          if (message.includes('[WebSocketClient] Connection lost') || 
-              message.includes('code=1008')) {
-            console.log('DETECTED: WebSocket connection lost!');
-            setConnectionStatus('reconnecting');
-          }
-          
-          // Check for reconnection attempts
-          if (message.includes('[WebSocketClient] Attempting to reconnect')) {
-            console.log('DETECTED: WebSocket attempting reconnect');
-            setConnectionStatus('reconnecting');
-          }
-        };
+      // Override console methods to detect WebSocket issues
+      console.log = function(...args) {
+        originalLog.apply(console, args);
+        const message = args.join(' ');
+        if (message.includes('[WebSocketClient] Connection lost') || message.includes('code=1008')) {
+          console.log('DETECTED: WebSocket connection lost!');
+          hasWebSocketIssues = true;
+          setConnectionStatus('reconnecting');
+        }
       };
 
-      // Override all console methods
-      interceptConsole('log');
-      interceptConsole('error');
-      interceptConsole('warn');
-      interceptConsole('info');
-      interceptConsole('debug');
+      console.error = function(...args) {
+        originalError.apply(console, args);
+        const message = args.join(' ');
+        if (message.includes('[WebSocketClient]') || message.includes('code=1008')) {
+          hasWebSocketIssues = true;
+          setConnectionStatus('reconnecting');
+        }
+      };
 
-      // Listen for messages from the iframe
+      console.warn = function(...args) {
+        originalWarn.apply(console, args);
+        const message = args.join(' ');
+        if (message.includes('[WebSocketClient]') || message.includes('code=1008')) {
+          hasWebSocketIssues = true;
+          setConnectionStatus('reconnecting');
+        }
+      };
+
+      // Listen for messages from iframe
       const handleMessage = (event: MessageEvent) => {
         console.log('Message from n8n iframe:', event.data);
         
-        if (typeof event.data === 'object' && event.data.command) {
-          if (event.data.command === 'n8nReady') {
-            console.log('n8n is ready, setting to connected after delay...');
-            // Set to connected after a short delay to allow WebSocket issues to be detected first
-            setTimeout(() => {
-              if (connectionStatus !== 'reconnecting') {
-                setConnectionStatus('connected');
-              }
-            }, 1000);
-          }
+        if (typeof event.data === 'object' && event.data.command === 'n8nReady') {
+          console.log('n8n is ready, checking for WebSocket issues...');
+          
+          // Give a moment for any immediate WebSocket errors to appear
+          connectionCheckTimeout = setTimeout(() => {
+            if (!hasWebSocketIssues) {
+              console.log('No WebSocket issues detected, setting to connected');
+              setConnectionStatus('connected');
+            }
+          }, 2000);
         }
       };
 
@@ -77,82 +77,12 @@ const Index = () => {
       return () => {
         window.removeEventListener('message', handleMessage);
         // Restore original console methods
-        Object.assign(console, originalConsole);
-      };
-    }
-  }, [isConnected, connectionStatus]);
-
-  // Monitor for persistent WebSocket issues with improved detection
-  useEffect(() => {
-    if (isConnected) {
-      let connectionIssueCount = 0;
-      let lastIssueTime = 0;
-      
-      const checkInterval = setInterval(() => {
-        const now = Date.now();
-        
-        // If we've been in reconnecting state for more than 5 seconds, it's a persistent issue
-        if (connectionStatus === 'reconnecting') {
-          console.log('DEBUG: Still in reconnecting state, checking duration...');
-          
-          // After 15 seconds of reconnecting, assume it will keep trying
-          if (now - lastIssueTime > 15000 && lastIssueTime > 0) {
-            console.log('DEBUG: Long reconnection period detected, keeping reconnecting status');
-          }
+        console.log = originalLog;
+        console.error = originalError;
+        console.warn = originalWarn;
+        if (connectionCheckTimeout) {
+          clearTimeout(connectionCheckTimeout);
         }
-        
-        // Update last issue time when we detect reconnecting
-        if (connectionStatus === 'reconnecting') {
-          lastIssueTime = now;
-        }
-        
-        console.log('DEBUG: Current connection status:', connectionStatus);
-      }, 2000);
-
-      return () => {
-        clearInterval(checkInterval);
-      };
-    }
-  }, [isConnected, connectionStatus]);
-
-  // Global console interceptor to catch WebSocket messages from any source
-  useEffect(() => {
-    if (isConnected) {
-      // Store references to original methods
-      const originalLog = window.console.log;
-      const originalError = window.console.error;
-      const originalWarn = window.console.warn;
-      
-      // Override window.console methods globally
-      window.console.log = function(...args) {
-        originalLog.apply(console, args);
-        const message = args.join(' ');
-        if (message.includes('[WebSocketClient] Connection lost') || message.includes('code=1008')) {
-          setConnectionStatus('reconnecting');
-        }
-      };
-
-      window.console.error = function(...args) {
-        originalError.apply(console, args);
-        const message = args.join(' ');
-        if (message.includes('[WebSocketClient]') || message.includes('code=1008')) {
-          setConnectionStatus('reconnecting');
-        }
-      };
-
-      window.console.warn = function(...args) {
-        originalWarn.apply(console, args);
-        const message = args.join(' ');
-        if (message.includes('[WebSocketClient]') || message.includes('code=1008')) {
-          setConnectionStatus('reconnecting');
-        }
-      };
-
-      return () => {
-        // Restore original console methods
-        window.console.log = originalLog;
-        window.console.error = originalError;
-        window.console.warn = originalWarn;
       };
     }
   }, [isConnected]);
@@ -162,7 +92,7 @@ const Index = () => {
       console.log('Connecting to n8n at:', n8nUrl);
       setIsConnected(true);
       setShowIframeError(false);
-      setConnectionStatus('reconnecting');
+      setConnectionStatus('reconnecting'); // Start as reconnecting, will change to connected if no issues
     }
   };
 
@@ -174,19 +104,9 @@ const Index = () => {
   };
 
   const handleIframeLoad = () => {
-    console.log('n8n iframe loaded, monitoring connection...');
+    console.log('n8n iframe loaded successfully');
     setShowIframeError(false);
-    setConnectionStatus('reconnecting');
-    
-    // Try to inject a script to monitor WebSocket status
-    try {
-      const iframe = iframeRef.current;
-      if (iframe && iframe.contentWindow) {
-        iframe.contentWindow.postMessage({ type: 'connection-check' }, '*');
-      }
-    } catch (error) {
-      console.log('Cannot access iframe content (expected due to CORS):', error);
-    }
+    // Don't automatically set to connected here - wait for n8nReady message and WebSocket check
   };
 
   const handleIframeError = () => {
