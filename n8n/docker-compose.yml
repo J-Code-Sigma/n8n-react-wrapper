@@ -18,7 +18,8 @@ services:
       - N8N_PUSH_BACKEND=websocket
       - N8N_RUNNERS_ENABLED=true
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-      - N8N_ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081
+      - N8N_ALLOWED_ORIGINS=*
+      - N8N_PROXY_HOPS=1
     volumes:
       - ./n8n_data:/home/node/.n8n
     networks:
