@@ -15,6 +15,7 @@ services:
       - WEBHOOK_URL=http://localhost:8081
       - DB_TYPE=sqlite
       - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite
+      - N8N_PUSH_BACKEND=sse
     volumes:
       - ./n8n_data:/home/node/.n8n
     networks:
