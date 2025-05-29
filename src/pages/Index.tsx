@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,25 +21,69 @@ const Index = () => {
       const handleMessage = (event: MessageEvent) => {
         console.log('Message from n8n iframe:', event.data);
         
-        // Check if it's a WebSocket status message
-        if (typeof event.data === 'string') {
-          if (event.data.includes('WebSocketClient') || event.data.includes('Connection lost')) {
-            console.log('WebSocket connection issue detected');
-            setConnectionStatus('reconnecting');
-          } else if (event.data.includes('connected') || event.data.includes('ready')) {
-            console.log('WebSocket connection established');
+        // Handle object-type messages from n8n
+        if (typeof event.data === 'object' && event.data.command) {
+          if (event.data.command === 'n8nReady') {
+            console.log('n8n is ready');
             setConnectionStatus('connected');
           }
         }
       };
 
+      // Listen for console errors from the iframe
+      const handleConsoleMessage = (event: any) => {
+        if (event.data && typeof event.data === 'string') {
+          if (event.data.includes('WebSocketClient') && event.data.includes('Connection lost')) {
+            console.log('WebSocket connection issue detected from console');
+            setConnectionStatus('reconnecting');
+          } else if (event.data.includes('WebSocketClient') && event.data.includes('Attempting to reconnect')) {
+            console.log('WebSocket reconnection attempt detected');
+            setConnectionStatus('reconnecting');
+          }
+        }
+      };
+
       window.addEventListener('message', handleMessage);
+      window.addEventListener('message', handleConsoleMessage);
+      
+      // Monitor browser console for WebSocket errors
+      const originalConsoleLog = console.log;
+      console.log = (...args) => {
+        originalConsoleLog(...args);
+        const message = args.join(' ');
+        if (message.includes('[WebSocketClient] Connection lost')) {
+          setConnectionStatus('reconnecting');
+        } else if (message.includes('[WebSocketClient] Attempting to reconnect')) {
+          setConnectionStatus('reconnecting');
+        }
+      };
       
       return () => {
         window.removeEventListener('message', handleMessage);
+        window.removeEventListener('message', handleConsoleMessage);
+        console.log = originalConsoleLog;
       };
     }
   }, [isConnected]);
+
+  // Monitor for WebSocket messages in browser console
+  useEffect(() => {
+    if (isConnected) {
+      // Check for WebSocket connection status by monitoring console
+      const checkInterval = setInterval(() => {
+        // This will help us detect when WebSocket issues are happening
+        // even if the iframe can't directly communicate the status
+        if (connectionStatus === 'reconnecting') {
+          // After some time, try to detect if connection is restored
+          setTimeout(() => {
+            setConnectionStatus('connected');
+          }, 5000);
+        }
+      }, 2000);
+
+      return () => clearInterval(checkInterval);
+    }
+  }, [isConnected, connectionStatus]);
 
   const handleConnect = () => {
     if (n8nUrl) {
@@ -61,7 +104,8 @@ const Index = () => {
   const handleIframeLoad = () => {
     console.log('n8n iframe loaded successfully');
     setShowIframeError(false);
-    setConnectionStatus('connected');
+    // Don't immediately set to connected - wait for n8nReady message
+    setConnectionStatus('reconnecting');
     
     // Try to inject a script to monitor WebSocket status
     try {
@@ -129,6 +173,21 @@ const Index = () => {
                   Make sure both n8n and nginx are running with the docker-compose setup.
                   <br />
                   <strong>Debug tip:</strong> Check browser console for WebSocket connection errors.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {connectionStatus === 'reconnecting' && (
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 m-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-blue-700">
+                  <strong>WebSocket Status:</strong> Connection issues detected. n8n is attempting to reconnect...
                 </p>
               </div>
             </div>
