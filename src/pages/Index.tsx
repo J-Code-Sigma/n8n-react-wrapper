@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -90,13 +91,13 @@ const Index = () => {
               <span className="text-sm text-gray-500">({n8nUrl})</span>
               <div className="flex items-center space-x-1">
                 {connectionStatus === 'connected' && (
-                  <Wifi className="w-4 h-4 text-green-500" title="Connected" />
+                  <Wifi className="w-4 h-4 text-green-500" />
                 )}
                 {connectionStatus === 'disconnected' && (
-                  <WifiOff className="w-4 h-4 text-red-500" title="Disconnected" />
+                  <WifiOff className="w-4 h-4 text-red-500" />
                 )}
                 {connectionStatus === 'reconnecting' && (
-                  <div className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" title="Reconnecting" />
+                  <div className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
                 )}
                 <span className="text-xs text-gray-500 capitalize">{connectionStatus}</span>
               </div>
