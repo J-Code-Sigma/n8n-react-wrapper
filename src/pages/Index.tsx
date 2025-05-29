@@ -14,16 +14,13 @@ const Index = () => {
   const handleConnect = () => {
     if (n8nUrl) {
       setIsConnected(true);
+      setShowIframeError(false);
     }
   };
 
   const handleDisconnect = () => {
     setIsConnected(false);
     setShowIframeError(false);
-  };
-
-  const handleIframeError = () => {
-    setShowIframeError(true);
   };
 
   if (isConnected) {
@@ -58,8 +55,8 @@ const Index = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  <strong>Browser Security Restriction:</strong> Your browser is blocking the embedded n8n interface for security reasons. 
-                  This is normal when using localhost. Please use the "Open in New Tab" button above to access n8n directly.
+                  <strong>Browser Security Restriction:</strong> Your browser is blocking the embedded n8n interface. 
+                  Try using the "Open in New Tab" button above, or configure n8n to allow iframe embedding.
                 </p>
               </div>
             </div>
@@ -70,16 +67,20 @@ const Index = () => {
           src={n8nUrl}
           className="w-full h-[calc(100vh-80px)] border-0"
           title="n8n Workflow Automation"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation"
-          onError={handleIframeError}
+          allow="fullscreen"
+          onError={() => setShowIframeError(true)}
           onLoad={(e) => {
-            // Check if iframe loaded successfully
-            try {
-              const iframe = e.target as HTMLIFrameElement;
-              iframe.contentWindow?.document;
-            } catch (error) {
-              setShowIframeError(true);
-            }
+            const iframe = e.target as HTMLIFrameElement;
+            // Check if iframe content is accessible
+            setTimeout(() => {
+              try {
+                if (!iframe.contentDocument && !iframe.contentWindow) {
+                  setShowIframeError(true);
+                }
+              } catch (error) {
+                setShowIframeError(true);
+              }
+            }, 2000);
           }}
         />
       </div>
@@ -111,8 +112,9 @@ const Index = () => {
             <p className="mt-1">Default: http://localhost:5678</p>
             <div className="mt-3 p-3 bg-blue-50 rounded-lg">
               <p className="text-xs text-blue-700">
-                <strong>Note:</strong> Some browsers may block embedded localhost content for security. 
-                If the embed doesn't work, use the "Open in New Tab" button that will appear.
+                <strong>To enable iframe embedding:</strong> Start n8n with the environment variable 
+                <code className="bg-white px-1 rounded"> N8N_EDITOR_BASE_URL=http://localhost:5678</code> 
+                and add iframe headers configuration.
               </p>
             </div>
           </div>
