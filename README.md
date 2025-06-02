@@ -5,6 +5,29 @@ The requirements are:
 - **Node.js & npm** - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 - **Docker & Docker Compose** - [install Docker](https://docs.docker.com/get-docker/) and [install Docker Compose](https://docs.docker.com/compose/install/)
 
+
+### Architecture
+
+The n8n setup includes:
+- **n8n container**: The main automation platform
+- **nginx container**: Reverse proxy that handles routing and WebSocket connections
+- **Persistent storage**: Your workflows and data are stored in `./n8n_data/`
+
+The nginx proxy is configured to handle iframe embedding and WebSocket connections properly, making it suitable for integration with web applications.
+
+## What technologies are used for this project?
+
+This project is built with:
+
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
+- Docker & Docker Compose (for n8n)
+- nginx (for n8n proxy)
+
+
 Follow these steps:
 
 ```sh
@@ -114,24 +137,3 @@ sudo chmod -R 755 ./n8n_data/
 ```bash
 sudo docker compose up -d
 ```
-
-### Architecture
-
-The n8n setup includes:
-- **n8n container**: The main automation platform
-- **nginx container**: Reverse proxy that handles routing and WebSocket connections
-- **Persistent storage**: Your workflows and data are stored in `./n8n_data/`
-
-The nginx proxy is configured to handle iframe embedding and WebSocket connections properly, making it suitable for integration with web applications.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-- Docker & Docker Compose (for n8n)
-- nginx (for n8n proxy)
